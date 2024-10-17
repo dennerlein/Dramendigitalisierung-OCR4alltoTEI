@@ -458,6 +458,6 @@ class Conversion:
     
 
 if __name__ == '__main__':
-    folder = Path('Pfad/zum/Ordner')  # Pfad zum Ordner mit Page-XMLs
-    result_file = 'Pfad/zur/Datei.xml'  # Pfad zur Ausgabedatei
+    folder = Path('data')  # Pfad zum Ordner mit Page-XMLs
+    result_file = 'output/Datei.xml'  # Pfad zur Ausgabedatei
     Conversion(str(folder / "*.xml")).create_tei(result_file)
