@@ -2,8 +2,11 @@ import glob
 from io import BytesIO
 from operator import attrgetter, itemgetter
 from pathlib import Path
-from typing import List, Tuple, Dict
+from typing import List, Tuple
 from lxml import etree
+import tkinter as tk
+from tkinter import filedialog
+import os
 
 
 class Page:
@@ -211,6 +214,15 @@ class Conversion:
                                             self.page = Page(self.current_file)
 
             result = f.getvalue().decode("utf-8")
+
+            result = result.replace("ſ", "s")
+            result = result.replace("ʒ", "z")
+            result = result.replace("Jch", "Ich")
+            result = result.replace("Jtzt", "Itzt")
+            result = result.replace("Jst", "Ist")
+            result = result.replace("Jn", "In")
+            result = result.replace("Jm", "Im")
+
             with open(file, "w", encoding="utf-8") as f:
                 prolog = """<?xml version="1.0" encoding="utf-8"?>
                             <?xml-stylesheet type="text/css" href="../css/tei.css"?>
@@ -219,7 +231,7 @@ class Conversion:
                 f.write(result)
             print(f"{Path(file).name} bearbeitet")
         except Exception as e:
-            print(f"{self.current_file} <--- FEHLER bei der Verarbeitung von:\n{e}\n------------------------------\n")
+            print(f"{self.current_file} <--- ERROR: {e}\nfile may not contain relevant content. Remove file from folder.\n------------------------------\n")
 
     def build_front(self, text_region: "TextRegion") -> None:
         UNKNOWN = "WARNING!, the following paragraph couldn't be handled\ncorrectly. You have to solve this by yourself."
@@ -265,6 +277,7 @@ class Conversion:
             else:
                 role_desc = etree.SubElement(self.__cast_item, "roleDesc")
             role_desc.text = self.concatenate_lines(text_region)
+
         elif text_region.type == "footnote":
             user_note = etree.SubElement(self.__front, "div", type="notes")
             p = etree.SubElement(user_note, "p")
@@ -453,11 +466,67 @@ class Conversion:
         return act_number
 
     def concatenate_lines(self, text_region: "TextRegion") -> str:
-        text = [ln.get_text() for ln in text_region.line]
-        return "\n".join(filter(None, text))
-    
+
+        hyphen_like_chars = ["-", "–", "—", "−"]
+        lines = [ln.get_text() for ln in text_region.line]
+        result = []
+        buffer = ""
+
+        for i, line in enumerate(lines):
+            if buffer:
+                line = buffer + line.lstrip()
+                buffer = ""
+
+            if any(line.endswith(hyphen) for hyphen in hyphen_like_chars):
+                buffer = line.rstrip("".join(hyphen_like_chars))  # Strip character from the end
+            else:
+                result.append(line)
+        if buffer:
+            result.append(buffer)
+
+        return "\n".join(result)
+
+
+script_directory = os.path.dirname(os.path.abspath(__file__))
+
+def get_input_folder():
+    """Open a dialog to select the input folder, starting in the script directory."""
+    root = tk.Tk()
+    root.withdraw()  # Hide the main window
+    folder_selected = filedialog.askdirectory(initialdir=script_directory,
+                                              title="Select Folder Containing Page-XML Files")
+    return folder_selected
+
+
+def get_output_file():
+    """Open a dialog to select the output file, starting in the script directory."""
+    root = tk.Tk()
+    root.withdraw()  # Hide the main window
+    file_selected = filedialog.asksaveasfilename(initialdir=script_directory, title="Save the output XML file",
+                                                 defaultextension=".xml", filetypes=[("XML files", "*.xml")])
+    return file_selected
+
 
 if __name__ == '__main__':
-    folder = Path('Pfad/zum/Ordner')  # Pfad zum Ordner mit Page-XMLs
-    result_file = 'Pfad/zur/Datei.xml'  # Pfad zur Ausgabedatei
-    Conversion(str(folder / "*.xml")).create_tei(result_file)
+    input_folder = get_input_folder()
+    output_file = get_output_file()
+
+    if input_folder and output_file:
+        try:
+            folder_path = Path(input_folder)  # Convert to Path object
+            result_file = output_file  # Path to the output file
+
+            # Perform the conversion
+            Conversion(str(folder_path / "*.xml")).create_tei(result_file)
+
+            # Check if the output file was created successfully
+            if Path(result_file).exists():
+                print(f"DraCor-TEI file successfully created at: {result_file}")
+            else:
+                print(f"Error: DraCor-TEI file could not be created at: {result_file}")
+
+        except Exception as e:
+            # Handle any exceptions during the conversion
+            print(f"An error occurred during the conversion: {e}")
+    else:
+        print("Input folder or output file not selected. Exiting.")
