@@ -7,6 +7,8 @@ from lxml import etree
 import tkinter as tk
 from tkinter import filedialog
 import os
+import re
+from bs4 import BeautifulSoup
 
 
 class Page:
@@ -18,7 +20,6 @@ class Page:
         tree = etree.parse(file)
         root = tree.getroot()
 
-        # Parse reading order
         self.reading_order = self.parse_reading_order(root)
 
         tr = root.findall(f".//{{*}}{self._TEXT_REGION}[{{*}}TextLine]")
@@ -98,6 +99,7 @@ class TextRegion:
         lines_text = "\n".join([str(line) for line in self.line])
         return f"type={self.type}\n{lines_text}\n])"
 
+
 class TextLine:
     _INDEX = "index"
     _TEXT_EQUIV = "TextEquiv"
@@ -119,6 +121,7 @@ class TextLine:
     def __str__(self):
         text = self.get_text()
         return f"{text}\nTextLine(x={self.x}, y={self.y})"
+
 
 class Conversion:
     _FRONT = "front"
@@ -149,6 +152,9 @@ class Conversion:
         self.__set = None
 
     def create_tei(self, file: str):
+
+        user_data = get_user_input()
+
         WRONG = ""
         BODY_MARKER = ["header", "heading", "floating", "credit", "drop-capital"]
 
@@ -169,14 +175,40 @@ class Conversion:
                     with xf.element("teiHeader"):
                         with xf.element("fileDesc"):
                             with xf.element("titleStmt"):
-                                with xf.element("title"):
-                                    xf.write(WRONG)
+                                with xf.element("title", type="main"):
+                                    xf.write(user_data.get("mainTitle", ""))
+                                with xf.element("title", type="sub"):
+                                    xf.write(user_data.get("subTitle", ""))
+                                with xf.element("author"):
+                                    with xf.element("persName"):
+                                        with xf.element("forename"):
+                                            xf.write(user_data.get("authorForename", ""))
+                                        with xf.element("surname"):
+                                            xf.write(user_data.get("authorSurname", ""))
+                                    with xf.element("idno", type="wikidata"):
+                                        xf.write(user_data.get("wikidata", ""))
+                                    with xf.element("idno", type="pnd"):
+                                        xf.write(user_data.get("pnd", ""))
                             with xf.element("publicationStmt"):
                                 with xf.element("publisher"):
                                     xf.write(WRONG)
                             with xf.element("sourceDesc"):
-                                with xf.element("p"):
-                                    xf.write(WRONG)
+                                with xf.element("bibl", type="digitalSource"):
+                                    with xf.element("name"):
+                                        xf.write(WRONG)
+                                    with xf.element("bibl", type="originalSource"):
+                                        with xf.element("author"):
+                                            xf.write(user_data.get("authorForename", "") + " " + user_data.get("authorSurname", ""))
+                                        with xf.element("title"):
+                                            xf.write(user_data.get("mainTitle", "") + ". " + user_data.get("subTitle", ""))
+                                        with xf.element("editor"):
+                                            xf.write(user_data.get("editor", ""))
+                                        with xf.element("pubPlace"):
+                                            xf.write(user_data.get("pubPlace", ""))
+                                        with xf.element("publisher"):
+                                            xf.write(user_data.get("publisher", ""))
+                                        with xf.element("date"):
+                                            xf.write(user_data.get("date", ""))
 
                     with xf.element("text"):
                         if self.page.text_region_list[0].type in BODY_MARKER:
@@ -217,11 +249,14 @@ class Conversion:
 
             result = result.replace("ſ", "s")
             result = result.replace("ʒ", "z")
+            result = result.replace("Ʒ", "Z")
             result = result.replace("Jch", "Ich")
             result = result.replace("Jtzt", "Itzt")
             result = result.replace("Jst", "Ist")
             result = result.replace("Jn", "In")
             result = result.replace("Jm", "Im")
+            result = result.replace("Jhm", "Ihm")
+            result = result.replace("Jhn", "Ihn")
 
             with open(file, "w", encoding="utf-8") as f:
                 prolog = """<?xml version="1.0" encoding="utf-8"?>
@@ -229,14 +264,14 @@ class Conversion:
                             <?xml-model href="https://dracor.org/schema.rng" type="application/xml" schematypens="http://relaxng.org/ns/structure/1.0"?>"""
                 result = prolog + result
                 f.write(result)
-            print(f"{Path(file).name} bearbeitet")
+            print(f"{Path(file).name} edited")
         except Exception as e:
             print(f"{self.current_file} <--- ERROR: {e}\nfile may not contain relevant content. Remove file from folder.\n------------------------------\n")
 
     def build_front(self, text_region: "TextRegion") -> None:
         UNKNOWN = "WARNING!, the following paragraph couldn't be handled\ncorrectly. You have to solve this by yourself."
 
-        if self.__previous_type == "catch-word" and text_region.type != "catch-word":
+        if self.__previous_type in ["signature-mark", "TOC-Entry"] and text_region.type == "catch-word":
             self.__is_title_page_created = True
 
         if text_region.type == "catch-word":
@@ -295,14 +330,14 @@ class Conversion:
 
         self.__previous_type = text_region.type
 
-    def write_front(self, xf: "etree._IncrementalFileWriter"):
+    def write_front(self, xf: "etree"):
         set_ = etree.SubElement(self.__front, "set")
         p = etree.SubElement(set_, "p")
         p.text = "WARNING!, the description of the setting (if existing) may\nbe misplaced as a 'roleDesc' element in the 'castList'. Place it at the correct place in an element like this."
         xf.write(self.__front)
         self._text_part = self._BODY
 
-    def build_body(self, xf: "etree._IncrementalFileWriter", text_region: "TextRegion", act_number: int) -> int:
+    def build_body(self, xf: "etree", text_region: "TextRegion", act_number: int) -> int:
         UNKNOWN = "WARNING!, the following paragraph couldn't be handled\ncorrectly. You have to solve this by yourself."
 
         if text_region.type == "header":
@@ -391,15 +426,15 @@ class Conversion:
                 p.text = self.concatenate_lines(text_region)
 
             elif self.__previous_type == "paragraph":
-                self.__stage = etree.SubElement(self.__scene, "stage")
+                #self.__stage = etree.SubElement(self.__scene, "stage")
                 # Start a new scenario
-                p = etree.SubElement(self.__stage, "p")
+                p = etree.SubElement(self.__sp, "stage")
                 p.text = self.concatenate_lines(text_region)
                 self.__current_scenario = "paragraph"
 
             elif self.__previous_type == "caption" and self.__current_scenario == "paragraph":
                 # Continue adding captions to the same set
-                p = etree.SubElement(self.__stage, "p")
+                p = etree.SubElement(self.__sp, "stage")
                 p.text = self.concatenate_lines(text_region)
 
             else:
@@ -466,25 +501,8 @@ class Conversion:
         return act_number
 
     def concatenate_lines(self, text_region: "TextRegion") -> str:
-
-        hyphen_like_chars = ["-", "–", "—", "−"]
-        lines = [ln.get_text() for ln in text_region.line]
-        result = []
-        buffer = ""
-
-        for i, line in enumerate(lines):
-            if buffer:
-                line = buffer + line.lstrip()
-                buffer = ""
-
-            if any(line.endswith(hyphen) for hyphen in hyphen_like_chars):
-                buffer = line.rstrip("".join(hyphen_like_chars))  # Strip character from the end
-            else:
-                result.append(line)
-        if buffer:
-            result.append(buffer)
-
-        return "\n".join(result)
+        text = [ln.get_text() for ln in text_region.line]
+        return "\n".join(filter(None, text))
 
 
 script_directory = os.path.dirname(os.path.abspath(__file__))
@@ -507,6 +525,84 @@ def get_output_file():
     return file_selected
 
 
+def get_user_input():
+    """Open a dialog to get user input for bibliographic information"""
+    root = tk.Tk()
+    root.withdraw()
+
+    # collect data in dictionary
+    user_data = {}
+
+    dialog = tk.Toplevel(root)
+    dialog.title("bibliographic information")
+
+    labels = ["authorForename", "authorSurname", "mainTitle", "subTitle", "editor", "pubPlace", "publisher", "date"]
+    entries = {}
+
+    for i, label_text in enumerate(labels):
+        label = tk.Label(dialog, text=label_text)
+        label.grid(row=i, column=0, padx=10, pady=5)
+        entry = tk.Entry(dialog, width=50)
+        entry.grid(row=i, column=1, padx=10, pady=5)
+        entry.focus_set() if i == 0 else None
+        entries[label_text] = entry
+
+    def on_ok():
+        # collects input in user_data variable
+        for key, entry in entries.items():
+            user_data[key] = entry.get()
+        dialog.destroy()
+
+    ok_button = tk.Button(dialog, text="OK", command=on_ok)
+    ok_button.grid(row=len(labels), columnspan=2, pady=10)
+
+    dialog.bind('<Return>', lambda event: on_ok())
+    root.wait_window(dialog)
+
+    return user_data
+
+
+def merge_sibling_p_elements_and_cleanup(xml_file_path):
+
+    with open(xml_file_path, 'r', encoding='utf-8') as file:
+        xml_content = file.read()
+
+    soup = BeautifulSoup(xml_content, 'xml')
+
+    def cleanup_text(text):
+        cleaned_text = re.sub(r'([a-zA-ZÄäÖöÜü])-\s+', r'\1', text)
+        cleaned_text = re.sub(r'([a-zA-ZÄäÖöÜü])-\n([a-zA-Z])', r'\1\2', cleaned_text)
+
+        return cleaned_text
+
+    for element in soup.find_all(True):
+        if element.string:
+            cleaned_content = cleanup_text(element.get_text())
+            element.string.replace_with(cleaned_content)
+
+    def merge_p_elements(tag):
+        p_elements = tag.find_all('p')
+
+        if len(p_elements) > 1:
+            merged_content = ' '.join(p.get_text() for p in p_elements)
+            cleaned_content = cleanup_text(merged_content)
+
+            for p in p_elements:
+                p.extract()
+
+            new_p = soup.new_tag('p')
+            new_p.string = cleaned_content
+            tag.append(new_p)
+
+    for sp in soup.find_all('sp'):
+        merge_p_elements(sp)
+
+    for stage in soup.find_all('stage'):
+        merge_p_elements(stage)
+
+    return str(soup)
+
+
 if __name__ == '__main__':
     input_folder = get_input_folder()
     output_file = get_output_file()
@@ -514,19 +610,23 @@ if __name__ == '__main__':
     if input_folder and output_file:
         try:
             folder_path = Path(input_folder)  # Convert to Path object
-            result_file = output_file  # Path to the output file
+            result_file = output_file
 
-            # Perform the conversion
             Conversion(str(folder_path / "*.xml")).create_tei(result_file)
 
-            # Check if the output file was created successfully
+            xml_file_path = result_file
+            merged_cleaned_xml_content = merge_sibling_p_elements_and_cleanup(xml_file_path)
+
+            # Write the result back to a file or print it out
+            with open(result_file, 'w', encoding='utf-8') as output_file:
+                output_file.write(merged_cleaned_xml_content)
+
             if Path(result_file).exists():
                 print(f"DraCor-TEI file successfully created at: {result_file}")
             else:
                 print(f"Error: DraCor-TEI file could not be created at: {result_file}")
 
         except Exception as e:
-            # Handle any exceptions during the conversion
             print(f"An error occurred during the conversion: {e}")
     else:
         print("Input folder or output file not selected. Exiting.")
