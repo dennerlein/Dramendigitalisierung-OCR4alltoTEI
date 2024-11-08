@@ -545,7 +545,7 @@ def get_user_input():
     dialog = tk.Toplevel(root)
     dialog.title("bibliographic information")
 
-    labels = ["authorForename", "authorSurname", "mainTitle", "subTitle", "editor", "pubPlace", "publisher", "date"]
+    labels = ["authorForename", "authorSurname", "wikidata", "pnd", "mainTitle", "subTitle", "editor", "pubPlace", "publisher", "date"]
     entries = {}
 
     for i, label_text in enumerate(labels):
