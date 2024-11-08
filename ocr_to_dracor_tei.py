@@ -518,10 +518,19 @@ def get_input_folder():
 
 def get_output_file():
     """Open a dialog to select the output file, starting in the script directory."""
+
+    # extract the Name of input folder as default file name
+    default_filename = os.path.basename(os.path.normpath(input_folder)) + ".xml"
+
     root = tk.Tk()
     root.withdraw()  # Hide the main window
-    file_selected = filedialog.asksaveasfilename(initialdir=script_directory, title="Save the output XML file",
-                                                 defaultextension=".xml", filetypes=[("XML files", "*.xml")])
+    file_selected = filedialog.asksaveasfilename(
+        initialdir=script_directory,
+        title="Save the output XML file",
+        initialfile=default_filename,
+        defaultextension=".xml",
+        filetypes=[("XML files", "*.xml")]
+    )
     return file_selected
 
 
