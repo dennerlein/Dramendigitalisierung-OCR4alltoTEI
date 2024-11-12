@@ -257,6 +257,7 @@ class Conversion:
             result = result.replace("Jm", "Im")
             result = result.replace("Jhm", "Ihm")
             result = result.replace("Jhn", "Ihn")
+            result = result.replace("Jhr", "Ihr")
 
             with open(file, "w", encoding="utf-8") as f:
                 prolog = """<?xml version="1.0" encoding="utf-8"?>
@@ -426,7 +427,7 @@ class Conversion:
                 p.text = self.concatenate_lines(text_region)
 
             elif self.__previous_type == "paragraph":
-                #self.__stage = etree.SubElement(self.__scene, "stage")
+                self.__stage = etree.SubElement(self.__scene, "stage")
                 # Start a new scenario
                 p = etree.SubElement(self.__sp, "stage")
                 p.text = self.concatenate_lines(text_region)
@@ -572,16 +573,15 @@ def get_user_input():
 
 
 def merge_sibling_p_elements_and_cleanup(xml_file_path):
-
     with open(xml_file_path, 'r', encoding='utf-8') as file:
         xml_content = file.read()
 
     soup = BeautifulSoup(xml_content, 'xml')
 
     def cleanup_text(text):
+
         cleaned_text = re.sub(r'([a-zA-ZÄäÖöÜü])-\s+', r'\1', text)
         cleaned_text = re.sub(r'([a-zA-ZÄäÖöÜü])-\n([a-zA-Z])', r'\1\2', cleaned_text)
-
         return cleaned_text
 
     for element in soup.find_all(True):
@@ -589,25 +589,39 @@ def merge_sibling_p_elements_and_cleanup(xml_file_path):
             cleaned_content = cleanup_text(element.get_text())
             element.string.replace_with(cleaned_content)
 
-    def merge_p_elements(tag):
-        p_elements = tag.find_all('p')
+    def merge_p_elements(p_elements):
+        if not p_elements:
+            return
 
-        if len(p_elements) > 1:
-            merged_content = ' '.join(p.get_text() for p in p_elements)
-            cleaned_content = cleanup_text(merged_content)
+        # merges and cleans the content of the list of p elements
+        merged_content = ' '.join(p.get_text() for p in p_elements)
+        cleaned_content = cleanup_text(merged_content)
 
-            for p in p_elements:
-                p.extract()
+        # identifies the paren element
+        parent = p_elements[0].parent if p_elements else None
 
+        # deletes old p elements
+        for p in p_elements:
+            p.extract()
+
+        # add new p element if parent exists
+        if parent is not None:
             new_p = soup.new_tag('p')
             new_p.string = cleaned_content
-            tag.append(new_p)
+            parent.append(new_p)
 
     for sp in soup.find_all('sp'):
-        merge_p_elements(sp)
+        p_buffer = []
+        for child in sp.children:
+            if child.name == 'p':
+                p_buffer.append(child)
+            else:
+                if len(p_buffer) > 1:
+                    merge_p_elements(p_buffer)
+                p_buffer = []
 
-    for stage in soup.find_all('stage'):
-        merge_p_elements(stage)
+        if len(p_buffer) > 1:
+            merge_p_elements(p_buffer)
 
     return str(soup)
 
