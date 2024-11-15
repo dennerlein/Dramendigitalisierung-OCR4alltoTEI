@@ -32,8 +32,8 @@ class Page:
     def __repr__(self) -> str:
         return self.file
 
-    def parse_reading_order(self, root) -> List[str]:
-        reading_order_elements = root.findall(f".//{{*}}OrderedGroup//{{*}}RegionRefIndexed")
+    def parse_reading_order(self, root, namespace) -> List[str]:
+        reading_order_elements = root.findall(f".//{{*}}OrderedGroup//{{*}}RegionRefIndexed", namespaces=namespace)
         reading_order = [el.get("regionRef") for el in reading_order_elements]
         return reading_order
 
