@@ -156,7 +156,24 @@ class Conversion:
 
     def create_tei(self, file: str):
 
-        user_data = get_user_input()
+        metadata_file = Path(self.file_list[0]).parent / "metadata.txt"
+
+        user_data = {}
+        if metadata_file.exists():
+            with open(metadata_file, 'r', encoding='utf-8') as meta_file:
+                for line in meta_file:
+                    # skip empty line
+                    line = line.strip()
+                    if not line or ":" not in line:
+                        continue 
+
+                    key, *value = line.split(": ", 1)
+                    key = key.strip()
+                    value = value[0].strip() if value else ""  # Wert leer, wenn nicht vorhanden
+                    user_data[key] = value
+        else:
+            print("Error: 'metadata.txt' not found. Exiting.")
+            return
 
         WRONG = ""
         BODY_MARKER = ["header", "heading", "floating", "credit", "drop-capital"]
