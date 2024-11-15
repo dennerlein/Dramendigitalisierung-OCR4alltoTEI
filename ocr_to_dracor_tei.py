@@ -646,6 +646,17 @@ if __name__ == '__main__':
             folder_path = Path(input_folder)  # Convert to Path object
             result_file = output_file
 
+            metadata_file = folder_path / "metadata.txt"
+            if not metadata_file.exists():
+                user_data = get_user_input()
+                with open(metadata_file, 'w', encoding='utf-8') as meta_file:
+                    meta_file.write("User Input Metadata:\n")
+                    for key, value in user_data.items():
+                        meta_file.write(f"{key}: {value}\n")
+                print(f"Metadata saved to: {metadata_file}")
+            else:
+                print('Metadata file already exists')
+
             Conversion(str(folder_path / "*.xml")).create_tei(result_file)
 
             xml_file_path = result_file
