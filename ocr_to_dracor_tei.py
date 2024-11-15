@@ -226,7 +226,8 @@ class Conversion:
                                     try:
                                         self.build_front(text_region)
                                     except Exception as e:
-                                        print(f"{self.current_file} <--- FEHLER bei der Verarbeitung:\n{text_region}: {e}\n------------------------------\n")
+                                        lines_text = "\n".join([line.get_text() for line in text_region.line])
+                                        print(f"\nERROR for type={text_region.type} in {os.path.basename(self.current_file)}\n\n{lines_text}\n\n####################################################\n")
                                 if text_region is self.page.text_region_list[-1]:
                                     self.current_file = next(self.file_iter, "end")
                                     if self.current_file != "end":
@@ -242,7 +243,8 @@ class Conversion:
                                         try:
                                             act_number = self.build_body(xf, text_region, act_number)
                                         except Exception as e:
-                                            print(f"{self.current_file} <--- FEHLER bei der Verarbeitung\n{text_region}: {e}\n------------------------------\n")
+                                            lines_text = "\n".join([line.get_text() for line in text_region.line])
+                                            print(f"\nERROR for type={text_region.type} in {os.path.basename(self.current_file)}\n\n{lines_text}\n\n####################################################\n")
                                     if text_region is self.page.text_region_list[-1]:
                                         self.current_file = next(self.file_iter, "end")
                                         if self.current_file != "end":
