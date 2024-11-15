@@ -343,164 +343,170 @@ class Conversion:
     def build_body(self, xf: "etree", text_region: "TextRegion", act_number: int) -> int:
         UNKNOWN = "WARNING!, the following paragraph couldn't be handled\ncorrectly. You have to solve this by yourself."
 
-        if text_region.type == "header":
-            if etree.iselement(self.__prologue):
-                xf.write(self.__prologue)
-                self.__prologue = None
-            act_number += 1
-            if act_number > 1:
-                xf.write(self.__act)
-            self.__act = etree.Element("div", type="act")
-            head = etree.SubElement(self.__act, "head")
-            head.text = self.concatenate_lines(text_region)
+        try:
 
-        elif text_region.type == "heading":
-            if self.__act is None:
+            if text_region.type == "header":
                 if etree.iselement(self.__prologue):
                     xf.write(self.__prologue)
-                self.__prologue = etree.Element("div", type="prologue")
-                head = etree.SubElement(self.__prologue, "head")
+                    self.__prologue = None
+                act_number += 1
+                if act_number > 1:
+                    xf.write(self.__act)
+                self.__act = etree.Element("div", type="act")
+                head = etree.SubElement(self.__act, "head")
                 head.text = self.concatenate_lines(text_region)
-            else:
-                self.__scene = etree.SubElement(self.__act, "div", type="scene")
-                head = etree.SubElement(self.__scene, "head")
-                head.text = self.concatenate_lines(text_region)
-                stage = etree.SubElement(self.__scene, "stage")
-                self.__cast_list = etree.SubElement(stage, "castList")
-            print("Initialized scene:", self.__scene)  # Debugging-Statement
 
-        elif text_region.type == "TOC-entry":
-            cast_item = etree.SubElement(self.__cast_list, "castItem")
-            cast_item.text = self.concatenate_lines(text_region)
-
-        elif text_region.type == "signature-mark":
-            if etree.iselement(self.__prologue):
-                stage = etree.SubElement(self.__prologue, "stage")
-            else:
-                stage = etree.SubElement(self.__scene, "stage")
-            stage.text = self.concatenate_lines(text_region)
-
-        elif text_region.type == "floating":
-            if etree.iselement(self.__prologue):
-                self.__sp_grp = etree.SubElement(self.__prologue, "spGrp")
-            else:
-                self.__sp_grp = etree.SubElement(self.__scene, "spGrp")
-            head = etree.SubElement(self.__sp_grp, "head")
-            head.text = self.concatenate_lines(text_region)
-            sp = etree.SubElement(self.__sp_grp, "sp")
-            speaker = etree.SubElement(sp, "speaker")
-            speaker.text = "WARNING!"
-            p = etree.SubElement(sp, "p")
-            p.text = "WARNING! Place the closing 'spGrp' tag after the last 'sp' tag of the\nsinging."
-
-        elif text_region.type in ["credit", "drop-capital"]:
-            if etree.iselement(self.__prologue):
-                self.__sp = etree.SubElement(self.__prologue, "sp")
-            else:
-                if self.__scene is None:
-                    # Falls die Szene nicht initialisiert wurde
-                    print("Error: Scene not initialized")
+            elif text_region.type == "heading":
+                if self.__act is None:
+                    if etree.iselement(self.__prologue):
+                        xf.write(self.__prologue)
+                    self.__prologue = etree.Element("div", type="prologue")
+                    head = etree.SubElement(self.__prologue, "head")
+                    head.text = self.concatenate_lines(text_region)
+                else:
                     self.__scene = etree.SubElement(self.__act, "div", type="scene")
-                    print("Initialized scene in fallback")
-                self.__sp = etree.SubElement(self.__scene, "sp")
-            speaker = etree.SubElement(self.__sp, "speaker")
-            speaker.text = self.concatenate_lines(text_region)
+                    head = etree.SubElement(self.__scene, "head")
+                    head.text = self.concatenate_lines(text_region)
+                    stage = etree.SubElement(self.__scene, "stage")
+                    self.__cast_list = etree.SubElement(stage, "castList")
+                print("Initialized scene:", self.__scene)  # Debugging-Statement
 
-        elif text_region.type == "paragraph":
-            if self.__sp is None:
-                self.__sp = etree.SubElement(self.__scene, "sp")
+            elif text_region.type == "TOC-entry":
+                cast_item = etree.SubElement(self.__cast_list, "castItem")
+                cast_item.text = self.concatenate_lines(text_region)
+
+            elif text_region.type == "signature-mark":
+                if etree.iselement(self.__prologue):
+                    stage = etree.SubElement(self.__prologue, "stage")
+                else:
+                    stage = etree.SubElement(self.__scene, "stage")
+                stage.text = self.concatenate_lines(text_region)
+
+            elif text_region.type == "floating":
+                if etree.iselement(self.__prologue):
+                    self.__sp_grp = etree.SubElement(self.__prologue, "spGrp")
+                else:
+                    self.__sp_grp = etree.SubElement(self.__scene, "spGrp")
+                head = etree.SubElement(self.__sp_grp, "head")
+                head.text = self.concatenate_lines(text_region)
+                sp = etree.SubElement(self.__sp_grp, "sp")
+                speaker = etree.SubElement(sp, "speaker")
+                speaker.text = "WARNING!"
+                p = etree.SubElement(sp, "p")
+                p.text = "WARNING! Place the closing 'spGrp' tag after the last 'sp' tag of the\nsinging."
+
+            elif text_region.type in ["credit", "drop-capital"]:
+                if etree.iselement(self.__prologue):
+                    self.__sp = etree.SubElement(self.__prologue, "sp")
+                else:
+                    if self.__scene is None:
+                        # Falls die Szene nicht initialisiert wurde
+                        print("Error: Scene not initialized")
+                        self.__scene = etree.SubElement(self.__act, "div", type="scene")
+                        print("Initialized scene in fallback")
+                    self.__sp = etree.SubElement(self.__scene, "sp")
                 speaker = etree.SubElement(self.__sp, "speaker")
-                speaker.text = "WARNING!, it seems that the speaker is missing."
-            p = etree.SubElement(self.__sp, "p")
-            p.text = self.concatenate_lines(text_region)
+                speaker.text = self.concatenate_lines(text_region)
 
-        elif text_region.type == "caption":
-            if self.__previous_type == "header":
-                # Start collecting captions in a div with type="set"
-                if self.__set is None:
-                    self.__set = etree.SubElement(self.__act, "div", type="set")
-                p = etree.SubElement(self.__set, "p")
-                p.text = self.concatenate_lines(text_region)
-                self.__current_scenario = "set"
-
-            elif self.__previous_type == "caption" and self.__current_scenario == "set":
-                # Continue adding captions to the same set
-                p = etree.SubElement(self.__set, "p")
+            elif text_region.type == "paragraph":
+                if self.__sp is None:
+                    self.__sp = etree.SubElement(self.__scene, "sp")
+                    speaker = etree.SubElement(self.__sp, "speaker")
+                    speaker.text = "WARNING!, it seems that the speaker is missing."
+                p = etree.SubElement(self.__sp, "p")
                 p.text = self.concatenate_lines(text_region)
 
-            elif self.__previous_type == "paragraph":
-                self.__stage = etree.SubElement(self.__scene, "stage")
-                # Start a new scenario
-                p = etree.SubElement(self.__sp, "stage")
-                p.text = self.concatenate_lines(text_region)
-                self.__current_scenario = "paragraph"
+            elif text_region.type == "caption":
+                if self.__previous_type == "header":
+                    # Start collecting captions in a div with type="set"
+                    if self.__set is None:
+                        self.__set = etree.SubElement(self.__act, "div", type="set")
+                    p = etree.SubElement(self.__set, "p")
+                    p.text = self.concatenate_lines(text_region)
+                    self.__current_scenario = "set"
 
-            elif self.__previous_type == "caption" and self.__current_scenario == "paragraph":
-                # Continue adding captions to the same set
-                p = etree.SubElement(self.__sp, "stage")
-                p.text = self.concatenate_lines(text_region)
+                elif self.__previous_type == "caption" and self.__current_scenario == "set":
+                    # Continue adding captions to the same set
+                    p = etree.SubElement(self.__set, "p")
+                    p.text = self.concatenate_lines(text_region)
 
-            else:
-                # Process caption normally
-                if self.__previous_type in ["credit", "heading", "scene"]:
-                    if self.__sp is not None:
-                        stage = etree.SubElement(self.__sp, "stage")
-                    else:
-                        stage = etree.SubElement(self.__scene, "stage")
-                    stage.text = self.concatenate_lines(text_region)
-                    self.__current_scenario = "normal"
+                elif self.__previous_type == "paragraph":
+                    self.__stage = etree.SubElement(self.__scene, "stage")
+                    # Start a new scenario
+                    p = etree.SubElement(self.__sp, "stage")
+                    p.text = self.concatenate_lines(text_region)
+                    self.__current_scenario = "paragraph"
+
+                elif self.__previous_type == "caption" and self.__current_scenario == "paragraph":
+                    # Continue adding captions to the same set
+                    p = etree.SubElement(self.__sp, "stage")
+                    p.text = self.concatenate_lines(text_region)
 
                 else:
-                    if etree.iselement(self.__prologue):
-                        stage = etree.SubElement(self.__prologue, "stage")
+                    # Process caption normally
+                    if self.__previous_type in ["credit", "heading", "scene"]:
+                        if self.__sp is not None:
+                            stage = etree.SubElement(self.__sp, "stage")
+                        else:
+                            stage = etree.SubElement(self.__scene, "stage")
+                        stage.text = self.concatenate_lines(text_region)
+                        self.__current_scenario = "normal"
+
                     else:
-                        stage = etree.SubElement(self.__scene, "stage")
-                    stage.text = self.concatenate_lines(text_region)
-                    self.__current_scenario = "normal"
+                        if etree.iselement(self.__prologue):
+                            stage = etree.SubElement(self.__prologue, "stage")
+                        else:
+                            stage = etree.SubElement(self.__scene, "stage")
+                        stage.text = self.concatenate_lines(text_region)
+                        self.__current_scenario = "normal"
 
-        elif text_region.type == "footnote":
-            if etree.iselement(self.__prologue):
-                user_note = etree.SubElement(self.__prologue, "div", type="notes")
-            else:
-                user_note = etree.SubElement(self.__scene, "div", type="notes")
-            p = etree.SubElement(user_note, "p")
-            p.text = "WARNING!, this footnote couldn't be placed correctly, you have to\nsolve this by yourself. Source file: " + self.current_file.split("/")[-1]
-            footnote = etree.SubElement(user_note, "note", place="foot")
-            footnote.text = self.concatenate_lines(text_region)
+            elif text_region.type == "footnote":
+                if etree.iselement(self.__prologue):
+                    user_note = etree.SubElement(self.__prologue, "div", type="notes")
+                else:
+                    user_note = etree.SubElement(self.__scene, "div", type="notes")
+                p = etree.SubElement(user_note, "p")
+                p.text = "WARNING!, this footnote couldn't be placed correctly, you have to\nsolve this by yourself. Source file: " + self.current_file.split("/")[-1]
+                footnote = etree.SubElement(user_note, "note", place="foot")
+                footnote.text = self.concatenate_lines(text_region)
 
-        elif text_region.type == "catch-word":
-            if self.__scene is None:
-                p = etree.Element("p")
-                p.text = "WARNING!, the following 'head' element might be misplaced, i.e.\nthere could be a better place."
-                caption = etree.Element("head")
-                caption.text = self.concatenate_lines(text_region)
-                xf.write(p)
-                xf.write(caption)
+            elif text_region.type == "catch-word":
+                if self.__scene is None:
+                    p = etree.Element("p")
+                    p.text = "WARNING!, the following 'head' element might be misplaced, i.e.\nthere could be a better place."
+                    caption = etree.Element("head")
+                    caption.text = self.concatenate_lines(text_region)
+                    xf.write(p)
+                    xf.write(caption)
+                else:
+                    caption = etree.SubElement(self.__scene, "div", type="notes")
+                    message = "WARNING!, the element isn't placed correctly, it still needs a solution."
+                    type_ = "type = " + text_region.type
+                    content = self.concatenate_lines(text_region)
+                    p_text = [message, type_, content]
+                    for text in p_text:
+                        p = etree.SubElement(caption, "p")
+                        p.text = text
+
             else:
-                caption = etree.SubElement(self.__scene, "div", type="notes")
-                message = "WARNING!, the element isn't placed correctly, it still needs a solution."
+                if etree.iselement(self.__prologue):
+                    unknown = etree.SubElement(self.__scene, "div", type="notes")
+                else:
+                    unknown = etree.SubElement(self.__scene, "div", type="notes")
                 type_ = "type = " + text_region.type
                 content = self.concatenate_lines(text_region)
-                p_text = [message, type_, content]
-                for text in p_text:
-                    p = etree.SubElement(caption, "p")
-                    p.text = text
+                p_list = [UNKNOWN, type_, content]
+                for e in p_list:
+                    p = etree.SubElement(unknown, "p")
+                    p.text = e
+            if self.current_file is self.file_list[-1] and text_region is self.page.text_region_list[-1]:
+                xf.write(self.__act)
+            self.__previous_type = text_region.type
 
-        else:
-            if etree.iselement(self.__prologue):
-                unknown = etree.SubElement(self.__scene, "div", type="notes")
-            else:
-                unknown = etree.SubElement(self.__scene, "div", type="notes")
-            type_ = "type = " + text_region.type
-            content = self.concatenate_lines(text_region)
-            p_list = [UNKNOWN, type_, content]
-            for e in p_list:
-                p = etree.SubElement(unknown, "p")
-                p.text = e
-        if self.current_file is self.file_list[-1] and text_region is self.page.text_region_list[-1]:
-            xf.write(self.__act)
-        self.__previous_type = text_region.type
-
+        except Exception as e:
+            print(f"Error processing region {text_region.text_region.get('id')}, type={text_region.type}: {e}")
+            raise
+        
         return act_number
 
     def concatenate_lines(self, text_region: "TextRegion") -> str:
