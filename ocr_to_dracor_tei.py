@@ -76,21 +76,23 @@ class TextRegion:
         text_line = self.text_region.findall(f".//{{*}}{self._TEXT_LINE}")
         lines = []
 
-        if self.text_region.find(f".//{{*}}{self._GLYPH}") is None:
-            for line in text_line:
-                reference_point = self.convert_coordinates(line.find(f"./{{*}}{self._COORDS}").get(self._POINTS))
-                reference_point = self.get_reference_point(reference_point)
-                lines.append(TextLine(line, reference_point))
-        else:
-            for line in text_line:
-                try:
-                    reference_point = self.convert_coordinates(line.find(f".//{{*}}{self._GLYPH}/{{*}}{self._COORDS}").get(self._POINTS))
-                    reference_point = self.get_reference_point(reference_point)
-                    lines.append(TextLine(line, reference_point))
-                except AttributeError:
-                    pass
+        for line in text_line:
+            coords_element = line.find(f"./{{*}}{self._COORDS}")
+            if coords_element is None:
+                print(f"Warning: Missing Coords for TextLine in region {self.text_region.get('id')}")
+                continue  # Überspringe diese Zeile
+            points = coords_element.get(self._POINTS)
+            if points is None:
+                print(f"Warning: Missing points attribute in Coords for TextLine in region {self.text_region.get('id')}")
+                continue  # Überspringe diese Zeile
+
+            reference_point = self.convert_coordinates(points)
+            reference_point = self.get_reference_point(reference_point)
+            lines.append(TextLine(line, reference_point))
+
         lines.sort(key=attrgetter("y"))
         return lines
+
 
     def set_horizontal_group(self, horizontal_group: int):
         self.horizontal_group = horizontal_group
