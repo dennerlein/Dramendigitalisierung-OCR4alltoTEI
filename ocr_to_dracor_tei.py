@@ -19,10 +19,11 @@ class Page:
         self.line_height = line_height
         tree = etree.parse(file)
         root = tree.getroot()
+        namespace = {"ns": root.nsmap.get(None)}
 
-        self.reading_order = self.parse_reading_order(root)
+        self.reading_order = self.parse_reading_order(root, namespace)
 
-        tr = root.findall(f".//{{*}}{self._TEXT_REGION}[{{*}}TextLine]")
+        tr = root.findall(f".//{{*}}{self._TEXT_REGION}[{{*}}TextLine]", namespaces=namespace)
         self.text_region_list = [TextRegion(e, line_height=self.line_height) for e in tr]
         self.text_region_dict = {tr.text_region.get('id'): tr for tr in self.text_region_list}
 
