@@ -169,7 +169,7 @@ class Conversion:
 
                     key, *value = line.split(": ", 1)
                     key = key.strip()
-                    value = value[0].strip() if value else ""  # Wert leer, wenn nicht vorhanden
+                    value = value[0].strip() if value else ""
                     user_data[key] = value
         else:
             print("Error: 'metadata.txt' not found. Exiting.")
@@ -203,6 +203,8 @@ class Conversion:
                                     with xf.element("persName"):
                                         with xf.element("forename"):
                                             xf.write(user_data.get("authorForename", ""))
+                                        with xf.element("nameLink"):
+                                            xf.write(user_data.get("nameLink", ""))
                                         with xf.element("surname"):
                                             xf.write(user_data.get("authorSurname", ""))
                                     with xf.element("idno", type="wikidata"):
@@ -216,9 +218,11 @@ class Conversion:
                                 with xf.element("bibl", type="digitalSource"):
                                     with xf.element("name"):
                                         xf.write(WRONG)
+                                    with xf.element("idno", type="URL"):
+                                        xf.write(user_data.get("url", ""))
                                     with xf.element("bibl", type="originalSource"):
                                         with xf.element("author"):
-                                            xf.write(user_data.get("authorForename", "") + " " + user_data.get("authorSurname", ""))
+                                            xf.write(user_data.get("authorForename", "") + " " + user_data.get("nameLink", "") + " " + user_data.get("authorSurname", ""))
                                         with xf.element("title"):
                                             xf.write(user_data.get("mainTitle", "") + ". " + user_data.get("subTitle", ""))
                                         with xf.element("editor"):
@@ -574,7 +578,7 @@ def get_user_input():
     dialog = tk.Toplevel(root)
     dialog.title("bibliographic information")
 
-    labels = ["authorForename", "authorSurname", "wikidata", "pnd", "mainTitle", "subTitle", "editor", "pubPlace", "publisher", "date"]
+    labels = ["authorForename", "nameLink", "authorSurname", "wikidata", "pnd", "mainTitle", "subTitle", "url", "editor", "pubPlace", "publisher", "date"]
     entries = {}
 
     for i, label_text in enumerate(labels):
