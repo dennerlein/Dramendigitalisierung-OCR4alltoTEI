@@ -612,7 +612,7 @@ def get_user_input():
     return user_data
 
 
-def merge_sibling_p_elements_and_cleanup(xml_file_path):
+def cleanup_content(xml_file_path):
     with open(xml_file_path, 'r', encoding='utf-8') as file:
         xml_content = file.read()
 
@@ -629,39 +629,39 @@ def merge_sibling_p_elements_and_cleanup(xml_file_path):
             cleaned_content = cleanup_text(element.get_text())
             element.string.replace_with(cleaned_content)
 
-    def merge_p_elements(p_elements):
-        if not p_elements:
-            return
+    # def merge_p_elements(p_elements):
+    #     if not p_elements:
+    #         return
 
-        # merges and cleans the content of the list of p elements
-        merged_content = ' '.join(p.get_text() for p in p_elements)
-        cleaned_content = cleanup_text(merged_content)
+    #     # merges and cleans the content of the list of p elements
+    #     merged_content = ' '.join(p.get_text() for p in p_elements)
+    #     cleaned_content = cleanup_text(merged_content)
 
-        # identifies the paren element
-        parent = p_elements[0].parent if p_elements else None
+    #     # identifies the parent element
+    #     parent = p_elements[0].parent if p_elements else None
 
-        # deletes old p elements
-        for p in p_elements:
-            p.extract()
+    #     # deletes old p elements
+    #     for p in p_elements:
+    #         p.extract()
 
-        # add new p element if parent exists
-        if parent is not None:
-            new_p = soup.new_tag('p')
-            new_p.string = cleaned_content
-            parent.append(new_p)
+    #     # add new p element if parent exists
+    #     if parent is not None:
+    #         new_p = soup.new_tag('p')
+    #         new_p.string = cleaned_content
+    #         parent.append(new_p)
 
-    for sp in soup.find_all('sp'):
-        p_buffer = []
-        for child in sp.children:
-            if child.name == 'p':
-                p_buffer.append(child)
-            else:
-                if len(p_buffer) > 1:
-                    merge_p_elements(p_buffer)
-                p_buffer = []
+    # for sp in soup.find_all('sp'):
+    #     p_buffer = []
+    #     for child in sp.children:
+    #         if child.name == 'p':
+    #             p_buffer.append(child)
+    #         else:
+    #             if len(p_buffer) > 1:
+    #                 merge_p_elements(p_buffer)
+    #             p_buffer = []
 
-        if len(p_buffer) > 1:
-            merge_p_elements(p_buffer)
+    #     if len(p_buffer) > 1:
+    #         merge_p_elements(p_buffer)
 
     return str(soup)
 
@@ -689,7 +689,7 @@ if __name__ == '__main__':
             Conversion(str(folder_path / "*.xml")).create_tei(result_file)
 
             xml_file_path = result_file
-            merged_cleaned_xml_content = merge_sibling_p_elements_and_cleanup(xml_file_path)
+            merged_cleaned_xml_content = cleanup_content(xml_file_path)
 
             # Write the result back to a file or print it out
             with open(result_file, 'w', encoding='utf-8') as output_file:
