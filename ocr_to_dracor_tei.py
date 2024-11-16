@@ -441,48 +441,56 @@ class Conversion:
                 p.text = self.concatenate_lines(text_region)
 
             elif text_region.type == "caption":
-                if self.__previous_type == "header":
-                    # Start collecting captions in a div with type="set"
-                    if self.__set is None:
-                        self.__set = etree.SubElement(self.__act, "div", type="set")
-                    p = etree.SubElement(self.__set, "p")
-                    p.text = self.concatenate_lines(text_region)
-                    self.__current_scenario = "set"
+                if self.__sp is None:
+                    self.__sp = etree.SubElement(self.__scene, "sp")
+                    speaker = etree.SubElement(self.__sp, "speaker")
+                    speaker.text = "WARNING!, it seems that the speaker is missing."                    
+                stage = etree.SubElement(self.__sp, "stage")
+                stage.text = self.concatenate_lines(text_region)
 
-                elif self.__previous_type == "caption" and self.__current_scenario == "set":
-                    # Continue adding captions to the same set
-                    p = etree.SubElement(self.__set, "p")
-                    p.text = self.concatenate_lines(text_region)
+            # elif text_region.type == "caption":
+            #     if self.__previous_type == "header":
+            #         # Start collecting captions in a div with type="set"
+            #         if self.__set is None:
+            #             self.__set = etree.SubElement(self.__act, "div", type="set")
+            #         p = etree.SubElement(self.__set, "p")
+            #         p.text = self.concatenate_lines(text_region)
+            #         self.__current_scenario = "set"
 
-                elif self.__previous_type == "paragraph":
-                    self.__stage = etree.SubElement(self.__scene, "stage")
-                    # Start a new scenario
-                    p = etree.SubElement(self.__sp, "stage")
-                    p.text = self.concatenate_lines(text_region)
-                    self.__current_scenario = "paragraph"
+            #     elif self.__previous_type == "caption" and self.__current_scenario == "set":
+            #         # Continue adding captions to the same set
+            #         p = etree.SubElement(self.__set, "p")
+            #         p.text = self.concatenate_lines(text_region)
 
-                elif self.__previous_type == "caption" and self.__current_scenario == "paragraph":
-                    # Continue adding captions to the same set
-                    p = etree.SubElement(self.__sp, "stage")
-                    p.text = self.concatenate_lines(text_region)
+            #     elif self.__previous_type == "paragraph":
+            #         self.__stage = etree.SubElement(self.__scene, "stage")
+            #         # Start a new scenario
+            #         p = etree.SubElement(self.__sp, "stage")
+            #         p.text = self.concatenate_lines(text_region)
+            #         self.__current_scenario = "paragraph"
 
-                else:
-                    # Process caption normally
-                    if self.__previous_type in ["credit", "heading", "scene"]:
-                        if self.__sp is not None:
-                            stage = etree.SubElement(self.__sp, "stage")
-                        else:
-                            stage = etree.SubElement(self.__scene, "stage")
-                        stage.text = self.concatenate_lines(text_region)
-                        self.__current_scenario = "normal"
+            #     elif self.__previous_type == "caption" and self.__current_scenario == "paragraph":
+            #         # Continue adding captions to the same set
+            #         p = etree.SubElement(self.__sp, "stage")
+            #         p.text = self.concatenate_lines(text_region)
 
-                    else:
-                        if etree.iselement(self.__prologue):
-                            stage = etree.SubElement(self.__prologue, "stage")
-                        else:
-                            stage = etree.SubElement(self.__scene, "stage")
-                        stage.text = self.concatenate_lines(text_region)
-                        self.__current_scenario = "normal"
+            #     else:
+            #         # Process caption normally
+            #         if self.__previous_type in ["credit", "heading", "scene"]:
+            #             if self.__sp is not None:
+            #                 stage = etree.SubElement(self.__sp, "stage")
+            #             else:
+            #                 stage = etree.SubElement(self.__scene, "stage")
+            #             stage.text = self.concatenate_lines(text_region)
+            #             self.__current_scenario = "normal"
+
+            #         else:
+            #             if etree.iselement(self.__prologue):
+            #                 stage = etree.SubElement(self.__prologue, "stage")
+            #             else:
+            #                 stage = etree.SubElement(self.__scene, "stage")
+            #             stage.text = self.concatenate_lines(text_region)
+            #             self.__current_scenario = "normal"
 
             elif text_region.type == "footnote":
                 if etree.iselement(self.__prologue):
