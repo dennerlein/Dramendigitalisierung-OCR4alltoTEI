@@ -221,19 +221,17 @@ class Conversion:
                                     with xf.element("idno", type="URL"):
                                         xf.write(user_data.get("url", ""))
                                     with xf.element("bibl", type="originalSource"):
-                                        with xf.element("author"):
-                                            xf.write(user_data.get("authorForename", "") + " " + user_data.get("nameLink", "") + " " + user_data.get("authorSurname", ""))
                                         with xf.element("title"):
-                                            xf.write(user_data.get("mainTitle", "") + ". " + user_data.get("subTitle", ""))
-                                        with xf.element("editor"):
-                                            xf.write(user_data.get("editor", ""))
-                                        with xf.element("pubPlace"):
-                                            xf.write(user_data.get("pubPlace", ""))
-                                        with xf.element("publisher"):
-                                            xf.write(user_data.get("publisher", ""))
-                                        with xf.element("date"):
-                                            xf.write(user_data.get("date", ""))
-
+                                            xf.write(f"""{user_data.get("authorForename", "")} 
+                                                         {user_data.get("nameLink", "")} 
+                                                         {user_data.get("authorSurname", "")}{":" if user_data.get("authorSurname", "") else " "}
+                                                         {user_data.get("mainTitle", "")}{". " if user_data.get("mainTitle", "") else " "}
+                                                         {user_data.get("subTitle", "")}{". " if user_data.get("authorSurname", "") else " "}
+                                                         {user_data.get("pubPlace", "")}{": " if user_data.get("pubPlace", "") else " "}
+                                                         {user_data.get("publisher", "")} 
+                                                         {user_data.get("date", "")}{". " if user_data.get("date", "") else " "}
+                                                    """)
+                                                     
                     with xf.element("text"):
                         if self.page.text_region_list[0].type in BODY_MARKER:
                             self._text_part = self._BODY
