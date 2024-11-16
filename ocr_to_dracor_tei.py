@@ -448,50 +448,6 @@ class Conversion:
                 stage = etree.SubElement(self.__sp, "stage")
                 stage.text = self.concatenate_lines(text_region)
 
-            # elif text_region.type == "caption":
-            #     if self.__previous_type == "header":
-            #         # Start collecting captions in a div with type="set"
-            #         if self.__set is None:
-            #             self.__set = etree.SubElement(self.__act, "div", type="set")
-            #         p = etree.SubElement(self.__set, "p")
-            #         p.text = self.concatenate_lines(text_region)
-            #         self.__current_scenario = "set"
-
-            #     elif self.__previous_type == "caption" and self.__current_scenario == "set":
-            #         # Continue adding captions to the same set
-            #         p = etree.SubElement(self.__set, "p")
-            #         p.text = self.concatenate_lines(text_region)
-
-            #     elif self.__previous_type == "paragraph":
-            #         self.__stage = etree.SubElement(self.__scene, "stage")
-            #         # Start a new scenario
-            #         p = etree.SubElement(self.__sp, "stage")
-            #         p.text = self.concatenate_lines(text_region)
-            #         self.__current_scenario = "paragraph"
-
-            #     elif self.__previous_type == "caption" and self.__current_scenario == "paragraph":
-            #         # Continue adding captions to the same set
-            #         p = etree.SubElement(self.__sp, "stage")
-            #         p.text = self.concatenate_lines(text_region)
-
-            #     else:
-            #         # Process caption normally
-            #         if self.__previous_type in ["credit", "heading", "scene"]:
-            #             if self.__sp is not None:
-            #                 stage = etree.SubElement(self.__sp, "stage")
-            #             else:
-            #                 stage = etree.SubElement(self.__scene, "stage")
-            #             stage.text = self.concatenate_lines(text_region)
-            #             self.__current_scenario = "normal"
-
-            #         else:
-            #             if etree.iselement(self.__prologue):
-            #                 stage = etree.SubElement(self.__prologue, "stage")
-            #             else:
-            #                 stage = etree.SubElement(self.__scene, "stage")
-            #             stage.text = self.concatenate_lines(text_region)
-            #             self.__current_scenario = "normal"
-
             elif text_region.type == "footnote":
                 if etree.iselement(self.__prologue):
                     user_note = etree.SubElement(self.__prologue, "div", type="notes")
@@ -628,40 +584,6 @@ def cleanup_content(xml_file_path):
         if element.string:
             cleaned_content = cleanup_text(element.get_text())
             element.string.replace_with(cleaned_content)
-
-    # def merge_p_elements(p_elements):
-    #     if not p_elements:
-    #         return
-
-    #     # merges and cleans the content of the list of p elements
-    #     merged_content = ' '.join(p.get_text() for p in p_elements)
-    #     cleaned_content = cleanup_text(merged_content)
-
-    #     # identifies the parent element
-    #     parent = p_elements[0].parent if p_elements else None
-
-    #     # deletes old p elements
-    #     for p in p_elements:
-    #         p.extract()
-
-    #     # add new p element if parent exists
-    #     if parent is not None:
-    #         new_p = soup.new_tag('p')
-    #         new_p.string = cleaned_content
-    #         parent.append(new_p)
-
-    # for sp in soup.find_all('sp'):
-    #     p_buffer = []
-    #     for child in sp.children:
-    #         if child.name == 'p':
-    #             p_buffer.append(child)
-    #         else:
-    #             if len(p_buffer) > 1:
-    #                 merge_p_elements(p_buffer)
-    #             p_buffer = []
-
-    #     if len(p_buffer) > 1:
-    #         merge_p_elements(p_buffer)
 
     return str(soup)
 
