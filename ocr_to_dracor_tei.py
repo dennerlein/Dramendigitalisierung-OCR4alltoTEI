@@ -568,22 +568,52 @@ def get_user_input():
     return user_data
 
 
-def cleanup_content(xml_file_path):
+def merge_adjacent_elements_by_type(xml_file_path):
     with open(xml_file_path, 'r', encoding='utf-8') as file:
         xml_content = file.read()
 
     soup = BeautifulSoup(xml_content, 'xml')
 
     def cleanup_text(text):
-
+        # Bereinigt Text durch Entfernen von Bindestrichen an Zeilenenden und Zeilenumbrüchen
         cleaned_text = re.sub(r'([a-zA-ZÄäÖöÜü])-\s+', r'\1', text)
         cleaned_text = re.sub(r'([a-zA-ZÄäÖöÜü])-\n([a-zA-Z])', r'\1\2', cleaned_text)
         return cleaned_text
 
-    for element in soup.find_all(True):
-        if element.string:
-            cleaned_content = cleanup_text(element.get_text())
-            element.string.replace_with(cleaned_content)
+    def merge_elements(elements):
+        if not elements:
+            return None
+
+        merged_content = ' '.join(element.get_text(strip=True) for element in elements)
+        cleaned_content = cleanup_text(merged_content)
+
+        # defines type of new element
+        element_type = elements[0].name
+        parent = elements[0].parent
+
+        for element in elements:
+            element.extract()
+
+        # adds new elment with combined content
+        new_element = soup.new_tag(element_type)
+        new_element.string = cleaned_content
+        parent.append(new_element)
+
+    for sp in soup.find_all('sp'):
+        buffer = []
+        last_tag_name = None
+
+        for child in list(sp.children):  # creates `list` to be able to make changes while iterating.
+            if child.name == last_tag_name:
+                buffer.append(child)
+            else:
+                if buffer:
+                    merge_elements(buffer)
+                buffer = [child] if child.name else []  # new buffer, just in case
+                last_tag_name = child.name
+
+        if buffer:
+            merge_elements(buffer)
 
     return str(soup)
 
@@ -611,7 +641,7 @@ if __name__ == '__main__':
             Conversion(str(folder_path / "*.xml")).create_tei(result_file)
 
             xml_file_path = result_file
-            merged_cleaned_xml_content = cleanup_content(xml_file_path)
+            merged_cleaned_xml_content = merge_adjacent_elements_by_type(xml_file_path)
 
             # Write the result back to a file or print it out
             with open(result_file, 'w', encoding='utf-8') as output_file:
