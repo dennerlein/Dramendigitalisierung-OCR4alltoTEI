@@ -87,6 +87,8 @@
         </html>
     </xsl:template>
     
+    <xsl:template match="tei:front/tei:titlePage" />
+    
     <!-- Figurenliste -->
     <xsl:template match="tei:castList">
         <div class="cast-list">
@@ -140,6 +142,12 @@
                 <xsl:apply-templates select="tei:p |tei:l | tei:stage"/>
             </div>
         </div>
+    </xsl:template>
+    
+    <xsl:template match="tei:body/tei:head">
+        <h2>
+            <xsl:value-of select="."/>
+        </h2>
     </xsl:template>
     
     <!-- Template to handle <p> elements -->
