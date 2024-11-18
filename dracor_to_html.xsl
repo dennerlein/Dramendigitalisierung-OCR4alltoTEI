@@ -137,7 +137,7 @@
             </div>
             <!-- Process alternating <p> and <stage> elements in order -->
             <div class="text">
-                <xsl:apply-templates select="tei:p | tei:stage"/>
+                <xsl:apply-templates select="tei:p |tei:l | tei:stage"/>
             </div>
         </div>
     </xsl:template>
