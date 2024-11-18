@@ -393,11 +393,11 @@ class Conversion:
                     head = etree.SubElement(self.__scene, "head")
                     head.text = self.concatenate_lines(text_region)
                     stage = etree.SubElement(self.__scene, "stage")
-                    self.__cast_list = etree.SubElement(stage, "castList")
+                    #self.__cast_list = etree.SubElement(stage, "castList")
                 print("Initialized scene:", self.__scene)  # Debugging-Statement
 
             elif text_region.type == "TOC-entry":
-                cast_item = etree.SubElement(self.__cast_list, "castItem")
+                cast_item = etree.SubElement(self.__scene, "stage")
                 cast_item.text = self.concatenate_lines(text_region)
 
             elif text_region.type == "signature-mark":
