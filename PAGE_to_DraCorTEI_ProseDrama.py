@@ -403,6 +403,8 @@ class Conversion:
             elif text_region.type == "signature-mark":
                 if etree.iselement(self.__prologue):
                     stage = etree.SubElement(self.__prologue, "stage")
+                elif self.__previous_type == "header":
+                    stage = etree.SubElement(self.__act, "stage")
                 else:
                     stage = etree.SubElement(self.__scene, "stage")
                 stage.text = self.concatenate_lines(text_region)
